@@ -1,5 +1,5 @@
 const path = require('path')
-const fs = require('fs')
+const fs = require('fs-extra')
 const chai = require('chai')
 const expect = chai.expect
 const dirtyChai = require('dirty-chai')
@@ -24,7 +24,7 @@ describe('the configure module', () => {
   it('should add credentials when none are found', async () => {
     sandbox.stub(inquirer, 'prompt').resolves({key: 'one', secret: 'two'})
     await configure.consumer('twine-test')
-    let [key, secret] = await creds.getKeyAndSecret('apiKey')
+    let [key, secret] = await creds.getKeyAndSecret('consumer')
     expect(key).to.equal('one')
     expect(secret).to.equal('two')
     expect(inquirer.prompt.calledOnce).to.be.true()
@@ -32,7 +32,7 @@ describe('the configure module', () => {
   it('should overwrite existing credentials', async () => {
     sandbox.stub(inquirer, 'prompt').resolves({key: 'three', secret: 'four'})
     await configure.consumer('twine-test')
-    let [key, secret] = await creds.getKeyAndSecret('apiKey')
+    let [key, secret] = await creds.getKeyAndSecret('consumer')
     expect(key).to.equal('three')
     expect(secret).to.equal('four')
     expect(inquirer.prompt.calledOnce).to.be.true()
@@ -48,10 +48,10 @@ describe('the configure module', () => {
       .onFirstCall().resolves({continue: ''})
       .onSecondCall().resolves({pin: '1234'})
     sandbox.stub(util, 'openBrowser').returns('')
-    sandbox.spy(console, 'log')
+    sandbox.stub(console, 'log')
     await configure.account('twine-test')
     CredentialManager.prototype.getKeyAndSecret.restore()
-    let [token, secret] = await creds.getKeyAndSecret('accountToken')
+    let [token, secret] = await creds.getKeyAndSecret('account')
     expect(token).to.equal('ghi')
     expect(secret).to.equal('jkl')
     expect(console.log.calledWith('Account "foo" successfully added')).to.be.true()
@@ -59,7 +59,8 @@ describe('the configure module', () => {
   afterEach(() => {
     sandbox.restore()
   })
-  after((done) => {
-    fs.unlink(path.join(process.env.HOME, '.config', 'configstore', 'twine-test.json'), done)
+  after(async () => {
+    await creds.clearAll()
+    await fs.unlink(path.join(process.env.HOME, '.config', 'configstore', 'twine-test.json'))
   })
 })
