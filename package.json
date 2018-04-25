@@ -1,11 +1,13 @@
 {
-  "name": "twine",
-  "version": "1.0.0",
+  "name": "@pofallon/twine",
+  "version": "1.0.3",
   "description": "A command line Twitter client",
   "bin": {
     "twine": "./bin/twine.js"
   },
-  "main": "index.js",
+  "publishConfig": {
+    "access": "public"
+  },
   "scripts": {
     "test": "nyc mocha --recursive"
   },
@@ -46,6 +48,7 @@
     "keytar-prebuild": "^4.0.4",
     "oauth-1.0a": "^2.2.4",
     "opn": "^5.2.0",
-    "p-queue": "^2.4.0"
+    "p-queue": "^2.4.0",
+    "update-notifier": "^2.5.0"
   }
 }
