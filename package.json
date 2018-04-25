@@ -45,7 +45,7 @@
     "commander": "^2.14.1",
     "configstore": "^3.1.1",
     "inquirer": "^4.0.1",
-    "keytar-prebuild": "^4.0.4",
+    "keytar": "^4.2.1",
     "oauth-1.0a": "^2.2.4",
     "opn": "^5.2.0",
     "p-queue": "^2.4.0",
