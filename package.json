@@ -1,6 +1,6 @@
 {
   "name": "@pofallon/twine",
-  "version": "1.0.4",
+  "version": "1.0.5",
   "description": "A command line Twitter client",
   "bin": {
     "twine": "./bin/twine.js"
