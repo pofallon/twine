@@ -1,9 +1,30 @@
-const readline = require('readline')
+const through2 = require('through2')
+const ps = require('promise-streams')
+const split2 = require('split2')
+const from2Array = require('from2-array')
 const JSONStream = require('JSONStream')
-const PQueue = require('p-queue')
 const CredentialManager = require('../lib/credential-manager')
 const Twitter = require('../lib/twitter')
-const BatchEmitter = require('../lib/batch-emitter')
+const batchStream = require('../lib/batch-stream')
+
+const doLookup = async function (name, api, items, streams = process) {
+  let creds = new CredentialManager(name)
+  let [key, secret] = await creds.getKeyAndSecret('consumer')
+  let twitter = new Twitter(key, secret)
+  let [token, tokenSecret] = await creds.getKeyAndSecret('account')
+  twitter.setToken(token, tokenSecret)
+  return ps.pipeline(
+    items ? from2Array.obj(items.split(',')) : streams.stdin.pipe(split2()),
+    batchStream(100),
+    ps.map({concurrent: 2}, (data) => twitter.get(`${api}${data.join(',')}`)),
+    through2.obj(function (chunk, enc, next) {
+      chunk.forEach((c) => this.push(c))
+      next()
+    }),
+    JSONStream.stringify(),
+    streams.stdout
+  )
+}
 
 const lookup = {
   async users (name, users, streams) {
@@ -12,40 +33,6 @@ const lookup = {
   async statuses (name, ids, streams) {
     await doLookup(name, '1.1/statuses/lookup.json?id=', ids, streams)
   }
-}
-
-const doLookup = async function (name, api, items, streams = process) {
-  let creds = new CredentialManager(name)
-  let [key, secret] = await creds.getKeyAndSecret('consumer')
-  let twitter = new Twitter(key, secret)
-  let [token, tokenSecret] = await creds.getKeyAndSecret('account')
-  twitter.setToken(token, tokenSecret)
-  let queue = new PQueue({concurrency: 2})
-  let jsonStream = JSONStream.stringify()
-  jsonStream.pipe(streams.stdout)
-  await new Promise((resolve, reject) => {
-    let batch = new BatchEmitter(100)
-    batch.on('data', (data) => {
-      queue.add(() => twitter.get(`${api}${data.join(',')}`))
-        .then((results) => {
-          results.forEach((result) => { jsonStream.write(result) })
-        }).catch(reject)
-    })
-    batch.on('end', () => {
-      queue.onIdle().then(() => {
-        jsonStream.end()
-        resolve()
-      })
-    })
-    if (items) {
-      items.split(',').forEach((item) => { batch.add(item) })
-      batch.done()
-    } else {
-      readline.createInterface({input: streams.stdin})
-        .on('line', (line) => { batch.add(line) })
-        .on('close', () => { batch.done() })
-    }
-  })
 }
 
 module.exports = lookup
