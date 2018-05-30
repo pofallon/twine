@@ -50,6 +50,7 @@
     "oauth-1.0a": "^2.2.4",
     "opn": "^5.2.0",
     "p-queue": "^2.4.0",
+    "parallel-transform": "^1.1.0",
     "promise-streams": "^2.1.1",
     "split2": "^2.2.0",
     "through2": "^2.0.3",
